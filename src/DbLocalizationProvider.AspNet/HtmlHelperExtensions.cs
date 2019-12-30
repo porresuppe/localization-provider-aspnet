@@ -20,6 +20,7 @@
 
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Web.Mvc;
@@ -35,7 +36,7 @@ namespace DbLocalizationProvider
             if(model == null)
                 throw new ArgumentNullException(nameof(model));
 
-            return new MvcHtmlString(LocalizationProvider.Current.GetStringByCulture(model, CultureInfo.CurrentUICulture, formatArguments));
+            return new MvcHtmlString(LocalizationProvider.Current.GetStringByCulture(model, GetCurrentUiCulture(), formatArguments));
         }
 
         public static MvcHtmlString TranslateByCulture(this HtmlHelper helper, Expression<Func<object>> model, CultureInfo culture, params object[] formatArguments)
@@ -51,7 +52,7 @@ namespace DbLocalizationProvider
 
         public static MvcHtmlString Translate(this HtmlHelper helper, Expression<Func<object>> model, Type customAttribute, params object[] formatArguments)
         {
-            return TranslateByCulture(helper, model, customAttribute, CultureInfo.CurrentUICulture, formatArguments);
+            return TranslateByCulture(helper, model, customAttribute, GetCurrentUiCulture(), formatArguments);
         }
 
         public static MvcHtmlString TranslateByCulture(this HtmlHelper helper, Expression<Func<object>> model, Type customAttribute, CultureInfo culture, params object[] formatArguments)
@@ -75,7 +76,7 @@ namespace DbLocalizationProvider
 
         public static MvcHtmlString TranslateFor<TModel, TValue>(this HtmlHelper<TModel> html, Expression<Func<TModel, TValue>> expression, params object[] formatArguments)
         {
-            return TranslateForByCulture(html, expression, CultureInfo.CurrentUICulture, formatArguments);
+            return TranslateForByCulture(html, expression, GetCurrentUiCulture(), formatArguments);
         }
 
         public static MvcHtmlString TranslateForByCulture<TModel, TValue>(this HtmlHelper<TModel> html, Expression<Func<TModel, TValue>> expression, CultureInfo culture, params object[] formatArguments)
@@ -85,7 +86,7 @@ namespace DbLocalizationProvider
 
         public static MvcHtmlString Translate(this HtmlHelper helper, Enum target, params object[] formatArguments)
         {
-            return TranslateByCulture(helper, target, CultureInfo.CurrentUICulture, formatArguments);
+            return TranslateByCulture(helper, target, GetCurrentUiCulture(), formatArguments);
         }
 
         public static MvcHtmlString TranslateByCulture(this HtmlHelper helper, Enum target, CultureInfo culture, params object[] formatArguments)
@@ -108,7 +109,7 @@ namespace DbLocalizationProvider
                                                                  Type customAttribute,
                                                                  params object[] formatArguments)
         {
-            return TranslateForByCulture(html, expression, customAttribute, CultureInfo.CurrentUICulture, formatArguments);
+            return TranslateForByCulture(html, expression, customAttribute, GetCurrentUiCulture(), formatArguments);
         }
 
         public static MvcHtmlString TranslateForByCulture<TModel, TValue>(this HtmlHelper<TModel> html,
@@ -140,6 +141,17 @@ namespace DbLocalizationProvider
                                                                                                                          customAttribute),
                                                                                      culture,
                                                                                      formatArguments));
+        }
+
+        private static CultureInfo GetCurrentUiCulture()
+        {
+            var currentUiCulture = CultureInfo.CurrentUICulture;
+            if(ConfigurationContext.Current.Tenants.Any())
+            {
+                currentUiCulture = ConfigurationContext.Current.GetTenant().CultureInfo;
+            }
+
+            return currentUiCulture;
         }
     }
 }

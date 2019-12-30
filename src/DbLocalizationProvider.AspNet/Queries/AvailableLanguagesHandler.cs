@@ -32,7 +32,7 @@ namespace DbLocalizationProvider.AspNet.Queries
     {
         public IEnumerable<CultureInfo> Execute(AvailableLanguages.Query query)
         {
-            var cacheKey = CacheKeyHelper.BuildKey($"AvailableLanguages_{query.IncludeInvariant}");
+            var cacheKey = CacheKeyHelper.BuildKey($"AvailableLanguages_{ConfigurationContext.Current.GetTenantName()}_{query.IncludeInvariant}");
 
             if(HttpRuntime.Cache?.Get(cacheKey) is IEnumerable<CultureInfo> cachedLanguages)
                 return cachedLanguages;
@@ -45,7 +45,7 @@ namespace DbLocalizationProvider.AspNet.Queries
 
         private IEnumerable<CultureInfo> GetAvailableLanguages(bool includeInvariant)
         {
-            using(var db = new LanguageEntities())
+            using(var db = new LanguageEntities(ConnectionStringHelper.ConnectionString))
             {
                 var availableLanguages = db.LocalizationResourceTranslations
                     .Select(t => t.Language)

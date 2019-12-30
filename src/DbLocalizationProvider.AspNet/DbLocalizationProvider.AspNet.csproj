@@ -94,6 +94,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Commands\RemoveTranslationHandler.cs" />
+    <Compile Include="ConnectionStringHelper.cs" />
     <Compile Include="IAppBuilderExtensions.cs" />
     <Compile Include="Cache\ClearCacheHandler.cs" />
     <Compile Include="Cache\HttpCacheManager.cs" />

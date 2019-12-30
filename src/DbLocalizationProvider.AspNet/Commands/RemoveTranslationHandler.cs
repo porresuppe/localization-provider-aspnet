@@ -31,7 +31,7 @@ namespace DbLocalizationProvider.AspNet.Commands
     {
         public void Execute(RemoveTranslation.Command command)
         {
-            using(var db = new LanguageEntities())
+            using(var db = new LanguageEntities(ConnectionStringHelper.ConnectionString))
             {
                 var existingResource = db.LocalizationResources.Include(r => r.Translations).FirstOrDefault(r => r.ResourceKey == command.Key);
                 if(existingResource == null)

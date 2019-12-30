@@ -52,9 +52,16 @@ namespace DbLocalizationProvider.Sync
             }
 
             // initialize db structures first (issue #53)
-            using(var ctx = new LanguageEntities())
+            if(ConfigurationContext.Current.Tenants.Any())
             {
-                var tmp = ctx.LocalizationResources.FirstOrDefault();
+                foreach(var t in ConfigurationContext.Current.Tenants)
+                {
+                    InitializeDatabaseStructures(t.ConnectionString);
+                }
+            }
+            else
+            {
+                InitializeDatabaseStructures(ConfigurationContext.Current.DbContextConnectionString);
             }
 
             ResetSyncStatus();
@@ -66,13 +73,36 @@ namespace DbLocalizationProvider.Sync
             StoreKnownResourcesAndPopulateCache();
         }
 
+        private static void InitializeDatabaseStructures(string connectionString)
+        {
+            using (var ctx = new LanguageEntities(connectionString))
+            {
+                var tmp = ctx.LocalizationResources.FirstOrDefault();
+            }
+        }
+
         public void RegisterManually(IEnumerable<ManualResource> resources)
         {
-            using(var db = new LanguageEntities())
+            if(ConfigurationContext.Current.Tenants.Any())
+            {
+                foreach(var t in ConfigurationContext.Current.Tenants)
+                {
+                    RegisterManuallySingle(resources, t.ConnectionString);
+                }
+            }
+            else
+            {
+                RegisterManuallySingle(resources, ConfigurationContext.Current.DbContextConnectionString);
+            }
+        }
+
+        private void RegisterManuallySingle(IEnumerable<ManualResource> resources, string connectionString)
+        {
+            using (var db = new LanguageEntities(connectionString))
             {
                 var defaultCulture = new DetermineDefaultCulture.Query().Execute();
 
-                foreach(var resource in resources)
+                foreach (var resource in resources)
                     RegisterIfNotExist(db, resource.Key, resource.Translation, defaultCulture, "manual");
 
                 db.SaveChanges();
@@ -102,7 +132,22 @@ namespace DbLocalizationProvider.Sync
 
         private void ResetSyncStatus()
         {
-            using(var conn = new SqlConnection(ConfigurationContext.Current.DbContextConnectionString))
+            if(ConfigurationContext.Current.Tenants.Any())
+            {
+                foreach(var t in ConfigurationContext.Current.Tenants)
+                {
+                    ResetSyncStatusExecute(t.ConnectionString);
+                }
+            }
+            else
+            {
+                ResetSyncStatusExecute(ConfigurationContext.Current.DbContextConnectionString);
+            }
+        }
+
+        private static void ResetSyncStatusExecute(string connectionString)
+        {
+            using (var conn = new SqlConnection(connectionString))
             {
                 var cmd = new SqlCommand("UPDATE dbo.LocalizationResources SET FromCode = 0", conn);
 
@@ -191,18 +236,34 @@ end
                                      }
                                  }
 
-                                 using(var conn = new SqlConnection(ConfigurationContext.Current.DbContextConnectionString))
+                                 if(ConfigurationContext.Current.Tenants.Any())
                                  {
-                                     var cmd = new SqlCommand(sb.ToString(), conn)
-                                               {
-                                                   CommandTimeout = 60
-                                               };
-
-                                     conn.Open();
-                                     cmd.ExecuteNonQuery();
-                                     conn.Close();
+                                     foreach(var t in ConfigurationContext.Current.Tenants)
+                                     {
+                                         RegisterDiscoveredResourcesExecute(t.ConnectionString, sb.ToString());
+                                     }
+                                 }
+                                 else
+                                 {
+                                     RegisterDiscoveredResourcesExecute(ConfigurationContext.Current.DbContextConnectionString, sb.ToString());
                                  }
                              });
+        }
+
+        private static void RegisterDiscoveredResourcesExecute(string connectionString, string cmdText)
+        {
+            using (var conn =
+                new SqlConnection(connectionString))
+            {
+                var cmd = new SqlCommand(cmdText, conn)
+                {
+                    CommandTimeout = 60
+                };
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+                conn.Close();
+            }
         }
 
         private static void AddTranslationScript(LocalizationResource existingResource, StringBuilder buffer, DiscoveredTranslation resource)

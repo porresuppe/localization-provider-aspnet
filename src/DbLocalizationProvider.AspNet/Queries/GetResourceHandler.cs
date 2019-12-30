@@ -29,7 +29,7 @@ namespace DbLocalizationProvider.AspNet.Queries
     {
         public LocalizationResource Execute(GetResource.Query query)
         {
-            using(var db = new LanguageEntities())
+            using(var db = new LanguageEntities(ConnectionStringHelper.ConnectionString))
             {
                 var resource = db.LocalizationResources
                                  .Include(r => r.Translations)

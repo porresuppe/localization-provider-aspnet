@@ -30,7 +30,7 @@ namespace DbLocalizationProvider.AspNet.Queries
     {
         public IEnumerable<LocalizationResource> Execute(GetAllResources.Query query)
         {
-            using(var db = new LanguageEntities())
+            using(var db = new LanguageEntities(ConnectionStringHelper.ConnectionString))
             {
                 return db.LocalizationResources.Include(r => r.Translations).ToList();
             }

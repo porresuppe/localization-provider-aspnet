@@ -21,6 +21,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure.Annotations;
+using System.Linq;
 using DbLocalizationProvider.Migrations;
 
 namespace DbLocalizationProvider
@@ -31,11 +32,18 @@ namespace DbLocalizationProvider
 
         public LanguageEntities(string connectionString) : base(connectionString)
         {
-            Database.SetInitializer(new MigrateDatabaseToLatestVersion<LanguageEntities, Configuration>());
+            if(ConfigurationContext.Current.InitializeDatabase)
+            {
+                Database.SetInitializer(new MigrateDatabaseToLatestVersion<LanguageEntities, Configuration>());
+            }
+
             Configuration.LazyLoadingEnabled = false;
             Configuration.ProxyCreationEnabled = false;
 
-            Database.Initialize(false);
+            if(ConfigurationContext.Current.InitializeDatabase)
+            {
+                Database.Initialize(false);
+            }
         }
 
         public virtual DbSet<LocalizationResource> LocalizationResources { get; set; }

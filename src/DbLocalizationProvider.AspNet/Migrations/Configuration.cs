@@ -6,8 +6,12 @@ namespace DbLocalizationProvider.Migrations
     {
         public Configuration()
         {
-            AutomaticMigrationsEnabled = true;
-            AutomaticMigrationDataLossAllowed = true;
+            if(ConfigurationContext.Current.InitializeDatabase)
+            {
+                AutomaticMigrationsEnabled = true;
+                AutomaticMigrationDataLossAllowed = true;
+            }
+
             ContextKey = "DbLocalizationProvider.LanguageEntities";
         }
     }
