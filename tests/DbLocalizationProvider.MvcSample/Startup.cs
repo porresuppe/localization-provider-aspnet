@@ -18,15 +18,35 @@ namespace DbLocalizationProvider.MvcSample
     {
         public void Configuration(IAppBuilder app)
         {
-            var inst = LocalizationProvider.Current;
+            app.Use(typeof(AuthenticationMiddleware));
 
             CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en");
 
             app.UseDbLocalizationProvider(ctx =>
                                           {
-                                              ctx.Connection = "MyConnectionString";
+                                              ctx.Tenants.Add(new Tenant
+                                              {
+                                                  Name = "CustomerA",
+                                                  ConnectionString = "",
+                                                  CultureInfo = new CultureInfo("da", false)
+
+                                              });
+                                              ctx.Tenants.Add(new Tenant
+                                              {
+                                                  Name = "CustomerB",
+                                                  ConnectionString = "",
+                                                  CultureInfo = new CultureInfo("en", false)
+                                              });
+
+                                              ctx.GetTenantName = () =>
+                                              {
+                                                  // This is used to get the current customer
+                                                  return "CustomerA";
+                                              };
+
                                               ctx.EnableInvariantCultureFallback = true;
                                               ctx.DefaultResourceCulture = CultureInfo.InvariantCulture;
+                                              ctx.FallbackCulture = CultureInfo.InvariantCulture;
                                               ctx.ModelMetadataProviders.MarkRequiredFields = true;
                                               ctx.ModelMetadataProviders.RequiredFieldResource = () => HomePageResources.RequiredFieldIndicator;
                                               ctx.CustomAttributes = new[]
@@ -39,11 +59,11 @@ namespace DbLocalizationProvider.MvcSample
                                               ctx.ForeignResources.Add(typeof(ForeignResources));
                                               ctx.CacheManager.OnRemove += CacheManagerOnOnRemove;
                                               ctx.TypeFactory.ForQuery<AvailableLanguages.Query>().SetHandler<SampleAvailableLanguagesHandler>();
+
+                                              ctx.CacheManager = new RedisCacheManager { Host = "localhost" };
                                           });
 
-            app.Map("/localization-admin", b => b.UseDbLocalizationProviderAdminUI(_ => { _.ShowInvariantCulture = true; }));
-
-            var inst2 = LocalizationProvider.Current;
+            app.Map($"/localization-admin", b => b.UseDbLocalizationProviderAdminUI(_ => { _.ShowInvariantCulture = true; }));
 
             app.UseDbLocalizationProviderJsHandler();
         }
@@ -57,7 +77,8 @@ namespace DbLocalizationProvider.MvcSample
                                                                   {
                                                                       new CultureInfo("en"),
                                                                       new CultureInfo("no"),
-                                                                      new CultureInfo("lv")
+                                                                      new CultureInfo("lv"),
+                                                                      new CultureInfo("da"),
                                                                   };
 
         public IEnumerable<CultureInfo> Execute(AvailableLanguages.Query query)
